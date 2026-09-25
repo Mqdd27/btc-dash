@@ -41,6 +41,14 @@ def fit_xgboost(train_df: pd.DataFrame, val_df: pd.DataFrame | None = None, hype
     hyperparameters = dict({**DEFAULT_HYPERPARAMETERS, **(hyperparameters or {})})
     X_train, y_train = train_df[ALL_FEATURE_COLUMNS], train_df[LABEL_COLUMN]
 
+    # Win/loss labels are rarely balanced (this strategy's train split is ~11% wins) --
+    # without this, XGBoost just learns to predict the majority class's base rate and
+    # P(win) never gets anywhere near a usable threshold. Skip if the caller set one.
+    if "scale_pos_weight" not in hyperparameters:
+        neg, pos = (y_train == 0).sum(), (y_train == 1).sum()
+        if pos > 0:
+            hyperparameters["scale_pos_weight"] = neg / pos
+
     model = XGBClassifier(**hyperparameters)
     if val_df is not None:
         model.set_params(early_stopping_rounds=20)
