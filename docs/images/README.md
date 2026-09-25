@@ -1,8 +1,14 @@
-# Screenshots needed for `docs/USAGE.md`
+# Screenshots for `docs/USAGE.md`
 
-Take these with the app running (`./scripts/start_dev.sh`), save as PNG with
-the exact filename below, drop them in this folder. `docs/USAGE.md` already
-references every one of these paths — no markdown edits needed once they exist.
+18/20 filled in (captured live against `localhost:8000` with real seeded
+data — no mocks). Still missing:
+
+- `agents-detail-top.png` / `agents-detail-trace.png` — no `AgentPipelineRun`
+  exists yet (Full Agent mode has never produced a real run on this machine).
+  Once one exists (run the engine in Full Agent mode with `AI_ENABLED=True`,
+  or `compare_strategies` variant D), take these with the app running
+  (`./scripts/start_dev.sh`), save as PNG with the exact filename below, drop
+  them in this folder. No markdown edits needed once they exist.
 
 | Filename | Page URL | What to capture |
 |---|---|---|

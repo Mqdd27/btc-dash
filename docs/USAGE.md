@@ -2,7 +2,7 @@
 
 Panduan ini menjelaskan cara menjalankan dan menggunakan seluruh bagian dari **btc-dash**, mulai dari Dashboard sampai Django Admin Panel.
 
-> **Screenshot**: Gambar di panduan ini masih placeholder (`docs/images/*.png`). Jalankan aplikasi, ambil screenshot tiap halaman sesuai nama file yang tertulis di bawah setiap gambar, lalu taruh di folder `docs/images/`. Begitu file-nya ada, gambar akan otomatis muncul saat markdown ini dibuka di GitHub/editor manapun.
+> **Screenshot**: 18 dari 20 gambar di panduan ini sudah diisi dari tampilan asli aplikasi (`docs/images/*.png`). Dua yang tersisa (`agents-detail-top.png`, `agents-detail-trace.png`) masih placeholder karena belum ada `AgentPipelineRun` sungguhan di database ini — lihat `docs/images/README.md` untuk detail cara mengisinya nanti.
 
 ## Daftar isi
 
