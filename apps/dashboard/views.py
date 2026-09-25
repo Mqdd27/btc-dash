@@ -3,17 +3,19 @@ from django.shortcuts import render
 
 from apps.market.features import get_feature_stats
 from apps.market.services import get_symbol_stats
-from apps.trading.services import get_engine_config
+from apps.trading.services import get_engine_config, get_live_engine_stats
 from core.health import celery_configured, check_database, check_redis
 
 
 def dashboard_view(request):
+    engine = get_engine_config()
     context = {
         "app_name": "BTC Trader",
         "db_ok": check_database(),
         "redis_ok": check_redis(),
         "celery_ok": celery_configured(),
-        "engine": get_engine_config(),
+        "engine": engine,
+        "live_engine": get_live_engine_stats(engine),
         "market_stats": get_symbol_stats("BTCUSDT", "1h"),
         "feature_stats": get_feature_stats("BTCUSDT", "1h"),
     }

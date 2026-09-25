@@ -93,6 +93,15 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    # Lightweight: one DB query + pure time math per tick, no network call in
+    # steady state. Only runs the real evaluation pipeline once a new candle
+    # has actually closed -- see apps/trading/tasks.py.
+    "check-for-new-candle": {
+        "task": "apps.trading.tasks.check_for_new_candle",
+        "schedule": 30.0,
+    },
+}
 
 # --- Structured logging (JSON to stdout) ---
 LOGGING = {
