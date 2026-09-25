@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Backtests{% endblock %}
+
+{% block content %}
+<h1>Backtests</h1>
+<p>
+    <a class="btn" href="{% url 'backtest-create' %}">Run new backtest</a>
+    <a href="{% url 'backtest-compare' %}">Compare strategies</a>
+</p>
+
+<div class="table-wrap">
+<table>
+    <thead>
+        <tr><th>ID</th><th>Strategy</th><th>Symbol</th><th>Timeframe</th><th>Range</th><th>Status</th><th>Return</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for run in runs %}
+        <tr>
+            <td>{{ run.id }}</td>
+            <td>{{ run.strategy.name }}</td>
+            <td>{{ run.symbol.symbol }}</td>
+            <td>{{ run.timeframe }}</td>
+            <td>{{ run.start_date|date:"Y-m-d" }} → {{ run.end_date|date:"Y-m-d" }}</td>
+            <td><span class="badge badge-{{ run.status }}">{{ run.get_status_display }}</span></td>
+            <td>{% if run.metrics.total_return_pct is not None %}{{ run.metrics.total_return_pct|floatformat:2 }}%{% else %}—{% endif %}</td>
+            <td><a href="{% url 'backtest-detail' run.id %}">View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8">No backtests yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

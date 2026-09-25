@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Run backtest{% endblock %}
+
+{% block content %}
+<h1>Run a new backtest</h1>
+<form class="stacked" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <p><button class="btn" type="submit">Queue backtest</button></p>
+</form>
+<p>Runs in the background via Celery — you'll land on the detail page and it'll update as it progresses.</p>
+{% endblock %}

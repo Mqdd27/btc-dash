@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Compare strategies{% endblock %}
+
+{% block content %}
+<h1>Compare strategies</h1>
+<p>One row per completed backtest run — a strategy can have several runs with different date ranges or configs.</p>
+
+<div class="table-wrap">
+<table>
+    <thead>
+        <tr><th>Strategy</th><th>Symbol</th><th>Timeframe</th><th>Range</th><th>Return</th><th>PF</th><th>Max DD</th><th>Sharpe</th><th>Trades</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for run in runs %}
+        <tr>
+            <td>{{ run.strategy.name }}</td>
+            <td>{{ run.symbol.symbol }}</td>
+            <td>{{ run.timeframe }}</td>
+            <td>{{ run.start_date|date:"Y-m-d" }} → {{ run.end_date|date:"Y-m-d" }}</td>
+            <td class="{% if run.metrics.total_return_pct >= 0 %}ok{% else %}bad{% endif %}">{{ run.metrics.total_return_pct|floatformat:2 }}%</td>
+            <td>{{ run.metrics.profit_factor|floatformat:2|default:"—" }}</td>
+            <td>{{ run.metrics.max_drawdown_pct|floatformat:2 }}%</td>
+            <td>{{ run.metrics.sharpe_ratio|floatformat:2|default:"—" }}</td>
+            <td>{{ run.metrics.total_trades }}</td>
+            <td><a href="{% url 'backtest-detail' run.id %}">View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="10">No completed backtests yet.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

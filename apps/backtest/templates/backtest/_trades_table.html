@@ -1,0 +1,54 @@
+<div id="trades-block">
+    <form id="trade-filters" class="filters">
+        <select name="side" hx-get="{% url 'backtest-trades' backtest.id %}" hx-include="#trade-filters"
+                hx-target="#trades-block" hx-swap="outerHTML" hx-trigger="change">
+            <option value="" {% if not selected_side %}selected{% endif %}>All sides</option>
+            <option value="LONG" {% if selected_side == "LONG" %}selected{% endif %}>LONG</option>
+            <option value="SHORT" {% if selected_side == "SHORT" %}selected{% endif %}>SHORT</option>
+        </select>
+        <select name="outcome" hx-get="{% url 'backtest-trades' backtest.id %}" hx-include="#trade-filters"
+                hx-target="#trades-block" hx-swap="outerHTML" hx-trigger="change">
+            <option value="" {% if not selected_outcome %}selected{% endif %}>Win or loss</option>
+            <option value="WIN" {% if selected_outcome == "WIN" %}selected{% endif %}>WIN</option>
+            <option value="LOSS" {% if selected_outcome == "LOSS" %}selected{% endif %}>LOSS</option>
+        </select>
+        <select name="exit_reason" hx-get="{% url 'backtest-trades' backtest.id %}" hx-include="#trade-filters"
+                hx-target="#trades-block" hx-swap="outerHTML" hx-trigger="change">
+            <option value="" {% if not selected_exit_reason %}selected{% endif %}>Any exit reason</option>
+            {% for reason in exit_reasons %}
+            <option value="{{ reason }}" {% if selected_exit_reason == reason %}selected{% endif %}>{{ reason }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Side</th><th>Entry</th><th>Entry px</th><th>Exit</th><th>Exit px</th>
+                <th>SL</th><th>TP</th><th>Size</th><th>Fees</th><th>Net PnL</th><th>Return %</th><th>Exit reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in trades %}
+            <tr>
+                <td>{{ t.side }}</td>
+                <td>{{ t.entry_timestamp|date:"Y-m-d H:i" }}</td>
+                <td>{{ t.entry_price|floatformat:2 }}</td>
+                <td>{{ t.exit_timestamp|date:"Y-m-d H:i"|default:"—" }}</td>
+                <td>{{ t.exit_price|floatformat:2|default:"—" }}</td>
+                <td>{{ t.stop_loss|floatformat:2 }}</td>
+                <td>{{ t.take_profit|floatformat:2 }}</td>
+                <td>{{ t.size|floatformat:6 }}</td>
+                <td>{{ t.fees|floatformat:2 }}</td>
+                <td class="{% if t.net_pnl >= 0 %}ok{% else %}bad{% endif %}">{{ t.net_pnl|floatformat:2 }}</td>
+                <td>{{ t.return_pct|floatformat:2 }}%</td>
+                <td>{{ t.exit_reason }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="12">No trades match these filters.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>

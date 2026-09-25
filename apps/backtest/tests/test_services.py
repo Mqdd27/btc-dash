@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone as dt_timezone
 import pytest
 
 from apps.backtest.models import BacktestRun, BacktestTrade
-from apps.backtest.services import run_backtest
+from apps.backtest.services import get_chart_data, run_backtest
 from apps.market.models import Candle, FeatureSnapshot, MarketSymbol
 from apps.strategy.models import StrategyConfig
 
@@ -60,3 +60,19 @@ def test_run_backtest_is_deterministic(symbol, strategy_config):
     assert first.metrics["total_trades"] == second.metrics["total_trades"]
     assert first.metrics["final_capital"] == second.metrics["final_capital"]
     assert first.metrics["max_drawdown_pct"] == second.metrics["max_drawdown_pct"]
+
+
+@pytest.mark.django_db
+def test_get_chart_data_has_one_marker_pair_per_closed_trade(symbol, strategy_config):
+    start, end = seed_data(symbol)
+    backtest = run_backtest(strategy_config, symbol, "1h", start, end, initial_capital=10000)
+
+    chart_data = get_chart_data(backtest)
+
+    closed_trades = backtest.trades.filter(exit_timestamp__isnull=False).count()
+    assert len(chart_data["markers"]) == closed_trades * 2
+    assert len(chart_data["equity_curve"]) == closed_trades
+    assert len(chart_data["price_series"]) == Candle.objects.filter(symbol=symbol, timeframe="1h").count()
+    # markers must be chronologically sorted for the chart library
+    times = [m["time"] for m in chart_data["markers"]]
+    assert times == sorted(times)

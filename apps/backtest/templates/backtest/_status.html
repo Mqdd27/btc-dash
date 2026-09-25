@@ -1,0 +1,11 @@
+{% if backtest.status == "queued" or backtest.status == "running" %}
+<div id="backtest-status" hx-get="{% url 'backtest-status' backtest.id %}" hx-trigger="every 3s" hx-swap="outerHTML">
+    <span class="badge badge-{{ backtest.status }}">{{ backtest.get_status_display }}</span> — refreshing…
+</div>
+{% else %}
+<div id="backtest-status">
+    <span class="badge badge-{{ backtest.status }}">{{ backtest.get_status_display }}</span>
+    {% if backtest.status == "failed" %}<span class="bad">{{ backtest.metrics.error }}</span>{% endif %}
+</div>
+{% if poll %}<script>window.location.reload();</script>{% endif %}
+{% endif %}

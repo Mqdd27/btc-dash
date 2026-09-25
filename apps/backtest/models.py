@@ -6,6 +6,7 @@ from apps.strategy.models import StrategyConfig
 
 class BacktestRun(models.Model):
     class Status(models.TextChoices):
+        QUEUED = "queued", "Queued"
         RUNNING = "running", "Running"
         COMPLETED = "completed", "Completed"
         FAILED = "failed", "Failed"
@@ -17,7 +18,7 @@ class BacktestRun(models.Model):
     end_date = models.DateTimeField()
 
     configuration = models.JSONField()  # BacktestEngineConfig used for this run
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.RUNNING)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.QUEUED)
 
     initial_capital = models.FloatField()
     final_capital = models.FloatField(null=True)

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Backtest #{{ backtest.id }}{% endblock %}
+
+{% block content %}
+<h1>Backtest #{{ backtest.id }} — {{ backtest.strategy.name }} on {{ backtest.symbol.symbol }} {{ backtest.timeframe }}</h1>
+<p>{{ backtest.start_date|date:"Y-m-d" }} → {{ backtest.end_date|date:"Y-m-d" }} · initial capital {{ backtest.initial_capital|floatformat:2 }}</p>
+{% include "backtest/_status.html" with backtest=backtest poll=False %}
+
+{% if backtest.status == "completed" %}
+<div class="grid-cards" style="margin: 1rem 0;">
+    <div class="card"><div class="label">Total return</div><div class="value">{{ backtest.metrics.total_return_pct|floatformat:2 }}%</div></div>
+    <div class="card"><div class="label">Buy & Hold</div><div class="value">{{ backtest.metrics.benchmark.total_return_pct|floatformat:2 }}%</div></div>
+    <div class="card"><div class="label">Profit factor</div><div class="value">{{ backtest.metrics.profit_factor|floatformat:2|default:"—" }}</div></div>
+    <div class="card"><div class="label">Win rate</div><div class="value">{{ backtest.metrics.win_rate_pct|floatformat:1 }}%</div></div>
+    <div class="card"><div class="label">Max drawdown</div><div class="value">{{ backtest.metrics.max_drawdown_pct|floatformat:2 }}%</div></div>
+    <div class="card"><div class="label">Sharpe</div><div class="value">{{ backtest.metrics.sharpe_ratio|floatformat:2|default:"—" }}</div></div>
+    <div class="card"><div class="label">Total trades</div><div class="value">{{ backtest.metrics.total_trades }}</div></div>
+</div>
+
+<h2>Price with entries/exits</h2>
+<div id="chart-price" class="chart"></div>
+<h2>Equity curve</h2>
+<div id="chart-equity" class="chart"></div>
+<h2>Drawdown</h2>
+<div id="chart-drawdown" class="chart"></div>
+<h2>Cumulative PnL</h2>
+<div id="chart-pnl" class="chart"></div>
+
+<h2>Trade history</h2>
+{% include "backtest/_trades_table.html" with trades=backtest.trades.all exit_reasons=exit_reasons selected_side="" selected_outcome="" selected_exit_reason="" %}
+
+<div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 280px;">
+        <h2>Largest winners</h2>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Entry</th><th>Side</th><th>Net PnL</th><th>Return %</th></tr></thead>
+            <tbody>
+                {% for t in top_winners %}
+                <tr><td>{{ t.entry_timestamp|date:"Y-m-d H:i" }}</td><td>{{ t.side }}</td><td class="ok">{{ t.net_pnl|floatformat:2 }}</td><td>{{ t.return_pct|floatformat:2 }}%</td></tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    </div>
+    <div style="flex: 1; min-width: 280px;">
+        <h2>Largest losers</h2>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Entry</th><th>Side</th><th>Net PnL</th><th>Return %</th></tr></thead>
+            <tbody>
+                {% for t in top_losers %}
+                <tr><td>{{ t.entry_timestamp|date:"Y-m-d H:i" }}</td><td>{{ t.side }}</td><td class="bad">{{ t.net_pnl|floatformat:2 }}</td><td>{{ t.return_pct|floatformat:2 }}%</td></tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+const chartData = {{ chart_data_json|safe }};
+
+function lineChart(containerId, data, color) {
+    const chart = LightweightCharts.createChart(document.getElementById(containerId), {
+        height: 300, layout: { textColor: '#111827' }, timeScale: { timeVisible: true },
+    });
+    const series = chart.addLineSeries({ color: color });
+    series.setData(data);
+    chart.timeScale().fitContent();
+    return chart;
+}
+
+const priceChart = LightweightCharts.createChart(document.getElementById('chart-price'), {
+    height: 300, layout: { textColor: '#111827' }, timeScale: { timeVisible: true },
+});
+const candleSeries = priceChart.addCandlestickSeries();
+candleSeries.setData(chartData.price_series);
+candleSeries.setMarkers(chartData.markers);
+priceChart.timeScale().fitContent();
+
+lineChart('chart-equity', chartData.equity_curve, '#2563eb');
+lineChart('chart-drawdown', chartData.drawdown_curve, '#dc2626');
+lineChart('chart-pnl', chartData.pnl_curve, '#16a34a');
+</script>
+{% endif %}
+{% endblock %}
