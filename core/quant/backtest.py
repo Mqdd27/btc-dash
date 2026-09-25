@@ -82,7 +82,7 @@ class EquityPoint:
 
 
 @dataclass
-class _OpenPosition:
+class OpenPosition:
     side: str
     signal_timestamp: datetime
     entry_timestamp: datetime
@@ -94,7 +94,7 @@ class _OpenPosition:
     entry_slippage: float
 
 
-def _position_size(entry_price: float, stop_loss: float, equity: float, config: BacktestEngineConfig) -> float:
+def position_size(entry_price: float, stop_loss: float, equity: float, config: BacktestEngineConfig) -> float:
     risk_amount = (
         config.risk_per_trade if config.position_size_type == "fixed_cash" else equity * config.risk_per_trade
     )
@@ -104,7 +104,7 @@ def _position_size(entry_price: float, stop_loss: float, equity: float, config: 
     return risk_amount / stop_distance
 
 
-def _fill(reference_price: float, slippage_percent: float, is_buy: bool) -> float:
+def fill_price(reference_price: float, slippage_percent: float, is_buy: bool) -> float:
     sign = 1 if is_buy else -1
     return reference_price * (1 + sign * slippage_percent)
 
@@ -113,7 +113,7 @@ def run_engine(
     candles: list[CandleBar], signals: list[SignalInput], config: BacktestEngineConfig
 ) -> tuple[list[Trade], list[EquityPoint]]:
     signals_by_timestamp = {s.timestamp: s for s in signals}
-    open_positions: list[_OpenPosition] = []
+    open_positions: list[OpenPosition] = []
     closed_trades: list[Trade] = []
     equity_curve: list[EquityPoint] = []
     equity = config.initial_capital
@@ -127,13 +127,13 @@ def run_engine(
                     signal.side == "SHORT" and config.allow_short
                 ):
                     is_buy = signal.side == "LONG"
-                    entry_price = _fill(candle.open, config.slippage_percent, is_buy)
-                    size = _position_size(entry_price, signal.stop_loss, equity, config)
+                    entry_price = fill_price(candle.open, config.slippage_percent, is_buy)
+                    size = position_size(entry_price, signal.stop_loss, equity, config)
                     if size > 0:
                         entry_fee = entry_price * size * config.taker_fee
                         entry_slippage = abs(entry_price - candle.open) * size
                         open_positions.append(
-                            _OpenPosition(
+                            OpenPosition(
                                 side=signal.side,
                                 signal_timestamp=signal.timestamp,
                                 entry_timestamp=candle.timestamp,
@@ -151,11 +151,11 @@ def run_engine(
         still_open = []
         is_last_candle = i == len(candles) - 1
         for pos in open_positions:
-            exit_reason, exit_level = _check_exit(pos, candle, force_close=is_last_candle)
+            exit_reason, exit_level = check_exit(pos, candle, force_close=is_last_candle)
             if exit_reason is None:
                 still_open.append(pos)
                 continue
-            trade = _close_position(pos, candle.timestamp, exit_level, exit_reason, config, equity)
+            trade = close_position(pos, candle.timestamp, exit_level, exit_reason, config, equity)
             equity = trade.equity_after
             closed_trades.append(trade)
         open_positions = still_open
@@ -165,7 +165,7 @@ def run_engine(
     return closed_trades, equity_curve
 
 
-def _check_exit(pos: _OpenPosition, candle: CandleBar, force_close: bool):
+def check_exit(pos: OpenPosition, candle: CandleBar, force_close: bool):
     if pos.side == "LONG":
         hit_sl = candle.low <= pos.stop_loss
         hit_tp = candle.high >= pos.take_profit
@@ -182,11 +182,11 @@ def _check_exit(pos: _OpenPosition, candle: CandleBar, force_close: bool):
     return None, None
 
 
-def _close_position(
-    pos: _OpenPosition, exit_timestamp, exit_level: float, exit_reason: str, config: BacktestEngineConfig, equity: float
+def close_position(
+    pos: OpenPosition, exit_timestamp, exit_level: float, exit_reason: str, config: BacktestEngineConfig, equity: float
 ) -> Trade:
     is_buy_to_close = pos.side == "SHORT"  # long exits by selling, short exits by buying back
-    exit_price = _fill(exit_level, config.slippage_percent, is_buy_to_close)
+    exit_price = fill_price(exit_level, config.slippage_percent, is_buy_to_close)
     exit_fee = exit_price * pos.size * config.taker_fee
     exit_slippage = abs(exit_price - exit_level) * pos.size
 

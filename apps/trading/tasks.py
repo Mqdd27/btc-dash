@@ -6,12 +6,14 @@ pipeline (apps.trading.engine.evaluate_now) only runs when it actually has.
 from celery import shared_task
 from django.utils import timezone
 
+from apps.market.models import Candle
 from apps.market.services import resolve_market_symbol
 from apps.strategy.models import StrategyConfig
 from core.execution.scheduling import latest_closed_candle_open
 
 from .engine import evaluate_now
 from .models import EngineConfig, LiveSignal
+from .paper import advance_paper_trading
 from .services import get_engine_config
 
 DEFAULT_SYMBOL = "BTCUSDT"
@@ -41,4 +43,9 @@ def check_for_new_candle() -> str:
         name=DEFAULT_STRATEGY_NAME, defaults={"timeframe": engine.timeframe}
     )
     signal = evaluate_now(strategy_config, symbol, engine.timeframe)
-    return f"evaluated: {signal.decision}" if signal else "nothing new"
+    if signal is None:
+        return "nothing new"
+
+    candle = Candle.objects.get(symbol=symbol, timeframe=engine.timeframe, timestamp=signal.timestamp)
+    advance_paper_trading(engine, candle, signal)  # no-op unless execution_mode == "paper"
+    return f"evaluated: {signal.decision}"

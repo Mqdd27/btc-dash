@@ -89,3 +89,35 @@ def test_new_candle_triggers_evaluation(symbol):
 
     mock_evaluate.assert_called_once()
     assert result == "nothing new"
+
+
+@pytest.mark.django_db
+def test_a_real_signal_is_handed_to_paper_trading(symbol):
+    engine = get_engine_config()
+    engine.enabled = True
+    engine.mode = EngineConfig.Mode.QUANT
+    engine.timeframe = "1h"
+    engine.execution_mode = EngineConfig.ExecutionMode.PAPER
+    engine.save()
+
+    candle_ts = datetime(2024, 1, 1, 13, 0, tzinfo=dt_timezone.utc)
+    candle = Candle.objects.create(
+        symbol=symbol, timeframe="1h", timestamp=candle_ts,
+        open=100, high=101, low=99, close=100, volume=1, closed=True,
+    )
+    snapshot = FeatureSnapshot.objects.create(symbol=symbol, timeframe="1h", timestamp=candle_ts)
+    # Not persisted: if this were a real row, the task's own "already evaluated"
+    # DB check would find it and never even reach the (mocked) evaluate_now call.
+    fake_signal = LiveSignal(
+        timestamp=candle_ts, symbol=symbol, timeframe="1h",
+        baseline_side="LONG", decision="LONG", feature_snapshot=snapshot, stop_loss=95, take_profit=110,
+    )
+
+    with patch("apps.trading.tasks.timezone") as mock_timezone, \
+         patch("apps.trading.tasks.evaluate_now", return_value=fake_signal), \
+         patch("apps.trading.tasks.advance_paper_trading") as mock_advance:
+        mock_timezone.now.return_value = NOW
+        result = check_for_new_candle()
+
+    mock_advance.assert_called_once_with(engine, candle, fake_signal)
+    assert result == "evaluated: LONG"

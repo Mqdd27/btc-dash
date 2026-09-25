@@ -40,8 +40,14 @@
             <option value="1h" {% if engine.timeframe == "1h" %}selected{% endif %}>1H</option>
             <option value="4h" {% if engine.timeframe == "4h" %}selected{% endif %}>4H</option>
         </select>
+        <label for="execution_mode">Execution</label>
+        <select name="execution_mode" id="execution_mode">
+            <option value="disabled" {% if engine.execution_mode == "disabled" %}selected{% endif %}>Disabled</option>
+            <option value="paper" {% if engine.execution_mode == "paper" %}selected{% endif %}>Paper</option>
+        </select>
         <p><button class="btn" type="submit">Save configuration</button></p>
     </form>
+    <p style="color:#6b7280;">Live order execution is not implemented — "Paper" only ever creates virtual positions, never a real exchange order.</p>
     {% if engine.mode != "quant" %}<p class="bad">Only Quant mode actually evaluates anything yet.</p>{% endif %}
 
     <h3>Status</h3>
@@ -50,6 +56,39 @@
     <p>Last signal: {% if live_engine.last_signal %}{{ live_engine.last_signal.decision }} @ {{ live_engine.last_signal.timestamp }}{% else %}—{% endif %}</p>
     <p>Model probability: {{ live_engine.last_signal.model_probability|floatformat:3|default:"—" }}</p>
     <p>Inferences today: {{ live_engine.daily_inference_count }}</p>
+</div>
+
+<div class="card">
+    <h2>Paper Trading</h2>
+    <p>Balance: {{ paper.balance|floatformat:2 }}</p>
+    <p>Equity: {{ paper.equity|floatformat:2 }}</p>
+    <p>Realized PnL: <span class="{% if paper.realized_pnl >= 0 %}ok{% else %}bad{% endif %}">{{ paper.realized_pnl|floatformat:2 }}</span></p>
+    <p>Unrealized PnL: <span class="{% if paper.unrealized_pnl >= 0 %}ok{% else %}bad{% endif %}">{{ paper.unrealized_pnl|floatformat:2 }}</span></p>
+    <p>Win rate: {{ paper.win_rate_pct|floatformat:1|default:"—" }}%</p>
+    <p>Profit factor: {{ paper.profit_factor|floatformat:2|default:"—" }}</p>
+    <p>Max drawdown: {{ paper.max_drawdown_pct|floatformat:2 }}%</p>
+    <p>Open positions: {{ paper.open_positions.count }}</p>
+
+    {% if paper.open_positions %}
+    <div class="table-wrap">
+    <table>
+        <thead><tr><th>Side</th><th>Entry</th><th>Entry px</th><th>Size</th><th>SL</th><th>TP</th></tr></thead>
+        <tbody>
+            {% for p in paper.open_positions %}
+            <tr><td>{{ p.side }}</td><td>{{ p.entry_timestamp|date:"Y-m-d H:i" }}</td><td>{{ p.entry_price|floatformat:2 }}</td><td>{{ p.size|floatformat:6 }}</td><td>{{ p.stop_loss|floatformat:2 }}</td><td>{{ p.take_profit|floatformat:2 }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'paper-update' %}" style="margin: 0.75rem 0;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{% if paper.account.paused %}resume{% else %}pause{% endif %}">
+        <button class="btn" type="submit">{% if paper.account.paused %}Resume paper trading{% else %}Pause paper trading{% endif %}</button>
+    </form>
+    {% if paper.account.paused %}<p class="bad">Paused — no new positions will open. Open positions are still monitored for SL/TP.</p>{% endif %}
+    {% if engine.execution_mode != "paper" %}<p class="bad">Execution mode is "{{ engine.get_execution_mode_display }}" — paper trading only runs when it's set to Paper.</p>{% endif %}
 </div>
 
 <div class="card">

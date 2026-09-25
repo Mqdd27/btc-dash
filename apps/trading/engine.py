@@ -86,4 +86,5 @@ def evaluate_now(strategy_config: StrategyConfig, symbol: MarketSymbol, timefram
         timestamp=candle.timestamp, symbol=symbol, timeframe=timeframe,
         baseline_side=baseline.side.value, model_probability=probability,
         decision=decision.value, model_version=model_version, feature_snapshot=snapshot,
+        stop_loss=baseline.stop_loss_reference, take_profit=baseline.take_profit_reference,
     )
