@@ -5,7 +5,6 @@ see review_candidate()'s early-return guards, all of which mean 0 AI calls.
 
 import hashlib
 import json
-import time
 
 from django.conf import settings
 from django.utils import timezone
@@ -14,15 +13,8 @@ from pydantic import BaseModel
 from apps.backtest.models import BacktestTrade
 from apps.trading.models import LiveSignal
 
-from .models import AgentDecision
-
-# $ per 1M tokens, from Anthropic's published pricing. Extend as needed --
-# an unlisted model just means estimated_cost stays None ("if available").
-MODEL_PRICING = {
-    "claude-opus-5": (5.00, 25.00),
-    "claude-sonnet-5": (2.00, 10.00),
-    "claude-haiku-4-5": (1.00, 5.00),
-}
+from .llm import call_claude_structured, estimate_cost
+from .models import AgentDecision, AgentStepDecision
 
 
 class ReviewOutput(BaseModel):
@@ -83,36 +75,26 @@ def render_prompt(context: dict) -> str:
     )
 
 
-def estimate_cost(model: str, input_tokens: int, output_tokens: int) -> float | None:
-    pricing = MODEL_PRICING.get(model)
-    if pricing is None:
-        return None
-    input_rate, output_rate = pricing
-    return (input_tokens * input_rate + output_tokens * output_rate) / 1_000_000
-
-
 def daily_call_count() -> int:
-    """Real API calls only -- cache hits are free and don't count against the limit."""
-    return AgentDecision.objects.filter(cached=False, created_at__date=timezone.now().date()).count()
+    """Real API calls only, across BOTH the single reviewer and the full_agent
+    pipeline -- one shared daily AI budget (only one mode runs at a time
+    anyway). Cache hits are free and don't count against the limit."""
+    today = timezone.now().date()
+    return (
+        AgentDecision.objects.filter(cached=False, created_at__date=today).count()
+        + AgentStepDecision.objects.filter(cached=False, created_at__date=today).count()
+    )
 
 
 def call_claude(prompt: str) -> tuple[ReviewOutput, int, int, float]:
-    import anthropic
-
-    client = anthropic.Anthropic()
-    start = time.monotonic()
-    response = client.messages.parse(
-        model=settings.AI_MODEL,
-        max_tokens=settings.AI_MAX_OUTPUT_TOKENS,
-        system=(
+    return call_claude_structured(
+        system_prompt=(
             "You are a terse trading-signal reviewer. Reply with only the "
             "requested structured fields -- no preamble, no extra commentary."
         ),
-        messages=[{"role": "user", "content": prompt}],
-        output_format=ReviewOutput,
+        user_prompt=prompt,
+        output_schema=ReviewOutput,
     )
-    latency_ms = (time.monotonic() - start) * 1000
-    return response.parsed_output, response.usage.input_tokens, response.usage.output_tokens, latency_ms
 
 
 def review_candidate(live_signal: LiveSignal) -> AgentDecision | None:

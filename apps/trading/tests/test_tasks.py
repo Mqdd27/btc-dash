@@ -32,10 +32,13 @@ def test_disabled_engine_never_evaluates(symbol):
 
 
 @pytest.mark.django_db
-def test_unimplemented_mode_never_evaluates(symbol):
+def test_unknown_mode_never_evaluates(symbol):
+    # All 3 defined EngineConfig.Mode values are implemented as of Phase 12 --
+    # this exercises the guard defensively against an out-of-choices value
+    # (mode is a plain CharField, not DB-enforced).
     engine = get_engine_config()
     engine.enabled = True
-    engine.mode = EngineConfig.Mode.FULL_AGENT  # only remaining unimplemented mode
+    engine.mode = "bogus_mode"
     engine.save()
 
     with patch("apps.trading.tasks.evaluate_now") as mock_evaluate:
@@ -179,3 +182,61 @@ def test_quant_ai_mode_never_reviews_a_wait_decision(symbol):
         check_for_new_candle()
 
     mock_review.assert_not_called()
+
+
+@pytest.mark.django_db
+def test_full_agent_mode_runs_trading_agents_for_actionable_signals(symbol):
+    engine = get_engine_config()
+    engine.enabled = True
+    engine.mode = EngineConfig.Mode.FULL_AGENT
+    engine.timeframe = "1h"
+    engine.save()
+
+    candle_ts = datetime(2024, 1, 1, 13, 0, tzinfo=dt_timezone.utc)
+    Candle.objects.create(
+        symbol=symbol, timeframe="1h", timestamp=candle_ts,
+        open=100, high=101, low=99, close=100, volume=1, closed=True,
+    )
+    snapshot = FeatureSnapshot.objects.create(symbol=symbol, timeframe="1h", timestamp=candle_ts)
+    fake_signal = LiveSignal(
+        timestamp=candle_ts, symbol=symbol, timeframe="1h",
+        baseline_side="SHORT", decision="SHORT", feature_snapshot=snapshot, stop_loss=105, take_profit=90,
+    )
+
+    with patch("apps.trading.tasks.timezone") as mock_timezone, \
+         patch("apps.trading.tasks.evaluate_now", return_value=fake_signal), \
+         patch("apps.agents.trading_agents.run_trading_agents") as mock_run, \
+         patch("apps.trading.tasks.advance_paper_trading"):
+        mock_timezone.now.return_value = NOW
+        check_for_new_candle()
+
+    mock_run.assert_called_once_with(fake_signal)
+
+
+@pytest.mark.django_db
+def test_full_agent_mode_never_runs_for_a_wait_decision(symbol):
+    engine = get_engine_config()
+    engine.enabled = True
+    engine.mode = EngineConfig.Mode.FULL_AGENT
+    engine.timeframe = "1h"
+    engine.save()
+
+    candle_ts = datetime(2024, 1, 1, 13, 0, tzinfo=dt_timezone.utc)
+    Candle.objects.create(
+        symbol=symbol, timeframe="1h", timestamp=candle_ts,
+        open=100, high=101, low=99, close=100, volume=1, closed=True,
+    )
+    snapshot = FeatureSnapshot.objects.create(symbol=symbol, timeframe="1h", timestamp=candle_ts)
+    fake_signal = LiveSignal(
+        timestamp=candle_ts, symbol=symbol, timeframe="1h",
+        baseline_side="WAIT", decision="WAIT", feature_snapshot=snapshot,
+    )
+
+    with patch("apps.trading.tasks.timezone") as mock_timezone, \
+         patch("apps.trading.tasks.evaluate_now", return_value=fake_signal), \
+         patch("apps.agents.trading_agents.run_trading_agents") as mock_run, \
+         patch("apps.trading.tasks.advance_paper_trading"):
+        mock_timezone.now.return_value = NOW
+        check_for_new_candle()
+
+    mock_run.assert_not_called()

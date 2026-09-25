@@ -66,8 +66,9 @@
     <p>Output tokens today: {{ ai.output_tokens_today }}</p>
     <p>Cache hits today: {{ ai.cache_hits_today }}</p>
     <p>Estimated cost today: ${{ ai.estimated_cost_today|floatformat:4 }}</p>
-    <p>Last AI decision: {% if ai.last_decision %}{{ ai.last_decision.decision }} ({{ ai.last_decision.confidence|floatformat:2 }}) — {{ ai.last_decision.reason }}{% else %}—{% endif %}</p>
-    <p style="color:#6b7280;">Only runs for Quant + AI mode candidates that already cleared the XGBoost threshold — never on every candle. Falls back to quant-only once the daily call limit is hit.</p>
+    <p>Last single-reviewer decision: {% if ai.last_decision %}{{ ai.last_decision.decision }} ({{ ai.last_decision.confidence|floatformat:2 }}) — {{ ai.last_decision.reason }}{% else %}—{% endif %}</p>
+    <p>Last TradingAgents recommendation: {% if ai.last_pipeline_run %}{{ ai.last_pipeline_run.final_recommendation }}{% else %}—{% endif %}</p>
+    <p style="color:#6b7280;">Only runs for Quant + AI (single reviewer) or Full Agent (TradingAgents) mode candidates that already cleared the XGBoost threshold — never on every candle. Falls back to quant-only once the daily call limit is hit. Both AI paths share one daily budget.</p>
 </div>
 
 <div class="card">
