@@ -40,7 +40,7 @@ celery -A config beat -l info       # penggerak live engine tiap candle close
 
 Buka **http://localhost:8000/** di browser setelah server jalan.
 
-![Sidebar navigasi](docs/images/sidebar.png)
+![Sidebar navigasi](images/sidebar.png)
 *Sidebar kiri ada di semua halaman: Dashboard, Market Data, Strategies, Backtests, Models, AI Agents, Trading, Settings (admin).*
 
 ---
@@ -49,18 +49,18 @@ Buka **http://localhost:8000/** di browser setelah server jalan.
 
 Halaman utama (`/`) berisi semua status sistem dalam satu layar, disusun sebagai kartu-kartu (cards).
 
-![Dashboard penuh](docs/images/dashboard-full.png)
+![Dashboard penuh](images/dashboard-full.png)
 *Tampilan Dashboard secara keseluruhan.*
 
 ### 2.1 Infrastructure
 
-![Kartu Infrastructure](docs/images/dashboard-infrastructure.png)
+![Kartu Infrastructure](images/dashboard-infrastructure.png)
 
 Status koneksi dasar: Database (Postgres), Redis, dan apakah Celery sudah terkonfigurasi. Hijau = OK, merah = bermasalah. Ini pengecekan paling pertama kalau ada yang aneh di halaman lain.
 
 ### 2.2 Live Engine
 
-![Kartu Live Engine](docs/images/dashboard-live-engine.png)
+![Kartu Live Engine](images/dashboard-live-engine.png)
 
 Ini kontrol utama sistem trading live (belum ada eksekusi order real — lihat catatan di halaman ini juga).
 
@@ -74,19 +74,19 @@ Setiap kali candle baru close (dicek Celery beat tiap 30 detik), engine otomatis
 
 ### 2.3 AI Reviewer
 
-![Kartu AI Reviewer](docs/images/dashboard-ai-reviewer.png)
+![Kartu AI Reviewer](images/dashboard-ai-reviewer.png)
 
 Statistik pemakaian AI hari ini: jumlah call vs limit harian, token input/output, cache hits, estimasi biaya, dan keputusan terakhir dari reviewer tunggal maupun dari TradingAgents. AI hanya dipanggil untuk kandidat yang sudah lolos threshold probabilitas XGBoost — **tidak pernah** dipanggil di setiap candle. Tidak ada tombol ON/OFF AI di sini secara sengaja — itu diatur lewat `.env` (`AI_ENABLED`), bukan klik UI, karena menyangkut biaya nyata.
 
 ### 2.4 Paper Trading
 
-![Kartu Paper Trading](docs/images/dashboard-paper-trading.png)
+![Kartu Paper Trading](images/dashboard-paper-trading.png)
 
 Akun trading virtual: balance, equity, realized/unrealized PnL, win rate, profit factor, max drawdown, dan tabel posisi yang sedang terbuka. Ada tombol **Pause/Resume** — saat di-pause, posisi baru tidak akan dibuka, tapi posisi yang sudah terbuka tetap dipantau untuk SL/TP (tidak dibiarkan tanpa manajemen risiko).
 
 ### 2.5 Market Data & Features
 
-![Kartu Market Data dan Features](docs/images/dashboard-market-features.png)
+![Kartu Market Data dan Features](images/dashboard-market-features.png)
 
 Ringkasan data candle BTCUSDT 1H yang tersimpan: rentang tanggal, jumlah candle, candle yang hilang (gap detection), jumlah data funding rate & open interest, serta status feature snapshot (indikator teknikal yang sudah dihitung). Kalau kosong, halaman ini kasih tahu command CLI yang perlu dijalankan.
 
@@ -98,32 +98,32 @@ Menu **Backtests** di sidebar (`/backtests/`).
 
 ### 3.1 Daftar backtest
 
-![Daftar backtest](docs/images/backtest-list.png)
+![Daftar backtest](images/backtest-list.png)
 
 Semua backtest yang pernah dijalankan: strategi, symbol, timeframe, rentang tanggal, status (queued/running/completed/failed), dan return. Ada tombol **Run new backtest** dan link **Compare strategies**.
 
 ### 3.2 Form backtest baru
 
-![Form backtest baru](docs/images/backtest-create.png)
+![Form backtest baru](images/backtest-create.png)
 
 Isi strategi, symbol, timeframe, tanggal mulai/akhir, modal awal, fee, slippage, dan cara sizing posisi. Backtest **tidak** dijalankan langsung saat submit — masuk antrian Celery (status `queued` → `running` → `completed`), supaya request HTTP tidak nge-block.
 
 ### 3.3 Detail backtest
 
-![Detail backtest - ringkasan](docs/images/backtest-detail-summary.png)
+![Detail backtest - ringkasan](images/backtest-detail-summary.png)
 *Kartu ringkasan: total return, Buy & Hold, profit factor, win rate, max drawdown, Sharpe ratio, total trades.*
 
-![Detail backtest - grafik](docs/images/backtest-detail-charts.png)
+![Detail backtest - grafik](images/backtest-detail-charts.png)
 *4 grafik: harga BTC dengan penanda entry/exit LONG/SHORT, equity curve, drawdown curve, dan cumulative PnL.*
 
-![Detail backtest - tabel trade](docs/images/backtest-detail-trades.png)
+![Detail backtest - tabel trade](images/backtest-detail-trades.png)
 *Riwayat trade lengkap dengan filter (LONG/SHORT, WIN/LOSS, exit reason), plus tabel largest winners & largest losers.*
 
 Halaman ini auto-refresh selama status masih `queued`/`running`, lalu reload otomatis begitu selesai.
 
 ### 3.4 Compare strategies
 
-![Compare strategies](docs/images/backtest-compare.png)
+![Compare strategies](images/backtest-compare.png)
 
 Tabel perbandingan semua backtest yang sudah selesai — satu baris per run, kolom Return/PF/Max DD/Sharpe. Untuk perbandingan 4-varian (baseline vs XGBoost vs +AI reviewer vs +TradingAgents) yang lebih detail, pakai command CLI `compare_strategies` (lihat bagian [7](#7-alur-kerja-end-to-end-via-cli)).
 
@@ -135,13 +135,13 @@ Menu **Models** di sidebar (`/walk-forward/`).
 
 ### 4.1 Daftar walk-forward run
 
-![Daftar walk-forward](docs/images/walkforward-list.png)
+![Daftar walk-forward](images/walkforward-list.png)
 
 Setiap run walk-forward validation: mode (rolling/expanding), rentang tanggal, jumlah window, dan return agregat out-of-sample.
 
 ### 4.2 Detail walk-forward
 
-![Detail walk-forward](docs/images/walkforward-detail.png)
+![Detail walk-forward](images/walkforward-detail.png)
 
 Kartu ringkasan performa **out-of-sample saja** (bukan performa training — jangan sampai tertukar), lalu tabel per-window: periode training, periode testing, jumlah trade, return, profit factor, max drawdown, Sharpe — supaya kelihatan apakah model konsisten kalau di-retrain berkala, bukan cuma cocok di satu periode.
 
@@ -153,16 +153,16 @@ Menu **AI Agents** di sidebar (`/ai-agents/`) — halaman baru untuk melihat det
 
 ### 5.1 Daftar run
 
-![Daftar AI Agents run](docs/images/agents-list.png)
+![Daftar AI Agents run](images/agents-list.png)
 
 Setiap kandidat yang direview lengkap oleh 7-agent pipeline: symbol, timeframe, candle sinyal, sisi baseline, rekomendasi final, token terpakai, estimasi biaya.
 
 ### 5.2 Detail trace — di sinilah "kenapa" keputusan trading bisa dilihat
 
-![Detail trace agent - bagian atas](docs/images/agents-detail-top.png)
+![Detail trace agent - bagian atas](images/agents-detail-top.png)
 *Header: sinyal yang direview (symbol, timeframe, waktu candle, sisi baseline, probabilitas XGBoost), rekomendasi final, dan total token/biaya/latency.*
 
-![Detail trace agent - alur pipeline](docs/images/agents-detail-trace.png)
+![Detail trace agent - alur pipeline](images/agents-detail-trace.png)
 *Alur lengkap 7 agent secara berurutan:*
 1. **Technical Analyst** — baca RSI/EMA/ATR/volatility yang sudah dihitung (bukan minta LLM hitung ulang).
 2. **Derivatives Analyst** — funding rate, perubahan funding, open interest, perubahan OI.
@@ -192,11 +192,11 @@ Ikuti prompt-nya (username, email, password).
 
 ### 6.2 Login
 
-![Halaman login admin](docs/images/admin-login.png)
+![Halaman login admin](images/admin-login.png)
 
 ### 6.3 Halaman utama admin
 
-![Index admin](docs/images/admin-index.png)
+![Index admin](images/admin-index.png)
 
 Semua model dikelompokkan per app: **Market** (MarketSymbol, Candle, FeatureSnapshot, FundingRate, OpenInterest), **Strategy** (StrategyConfig, SignalCandidate), **Backtest** (BacktestRun, BacktestTrade), **ML** (ModelVersion, WalkForwardRun, WalkForwardWindow), **Trading** (EngineConfig, LiveSignal, PaperAccount, PaperPosition, PaperTrade), **Agents** (AgentDecision, AgentPipelineRun, AgentStepDecision).
 
@@ -204,7 +204,7 @@ Sidebar Dashboard juga langsung link ke bagian **Market Data** (`/admin/market/`
 
 ### 6.4 Contoh: lihat EngineConfig langsung dari admin
 
-![Contoh model admin](docs/images/admin-model-example.png)
+![Contoh model admin](images/admin-model-example.png)
 
 Berguna untuk debug cepat — misalnya cek langsung apakah `EngineConfig.enabled` benar-benar `False`, tanpa lewat Dashboard.
 
