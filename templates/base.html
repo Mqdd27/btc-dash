@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BTC Trader{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <style>
+        body { margin: 0; font-family: system-ui, sans-serif; display: flex; min-height: 100vh; }
+        nav.sidebar { width: 200px; background: #111827; color: #e5e7eb; padding: 1rem; }
+        nav.sidebar a { display: block; color: #e5e7eb; text-decoration: none; padding: 0.5rem 0; }
+        nav.sidebar a:hover { color: #fff; }
+        main { flex: 1; padding: 1.5rem; }
+        .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .ok { color: #16a34a; }
+        .bad { color: #dc2626; }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <strong>BTC Trader</strong>
+        <a href="{% url 'dashboard' %}">Dashboard</a>
+        <a href="#">Market Data</a>
+        <a href="#">Strategies</a>
+        <a href="#">Backtests</a>
+        <a href="#">Models</a>
+        <a href="#">Trading</a>
+        <a href="/admin/">Settings</a>
+    </nav>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

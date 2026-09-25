@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard · {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1>{{ app_name }}</h1>
+
+<div class="card">
+    <h2>Infrastructure</h2>
+    <p>Database: <span class="{% if db_ok %}ok{% else %}bad{% endif %}">{{ db_ok|yesno:"connected,unreachable" }}</span></p>
+    <p>Redis: <span class="{% if redis_ok %}ok{% else %}bad{% endif %}">{{ redis_ok|yesno:"connected,unreachable" }}</span></p>
+    <p>Celery: <span class="{% if celery_ok %}ok{% else %}bad{% endif %}">{{ celery_ok|yesno:"configured,not configured" }}</span></p>
+</div>
+
+<div class="card">
+    <h2>Engine</h2>
+    <p>Engine: {{ engine.enabled|yesno:"ON,OFF" }}</p>
+    <p>Mode: {{ engine.get_mode_display }}</p>
+    <p>Timeframe: {{ engine.get_timeframe_display }}</p>
+    <p>Execution: {{ engine.get_execution_mode_display }}</p>
+</div>
+{% endblock %}
