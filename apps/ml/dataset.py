@@ -89,7 +89,12 @@ def build_split_dataset(
         row["signal_timestamp"] = t.signal_timestamp
         rows.append(row)
 
-    return pd.DataFrame(rows, columns=["signal_timestamp", *ALL_FEATURE_COLUMNS, LABEL_COLUMN])
+    df = pd.DataFrame(rows, columns=["signal_timestamp", *ALL_FEATURE_COLUMNS, LABEL_COLUMN])
+    # A feature that's None for every row in this window (e.g. before enough
+    # candles exist for EMA warm-up, or before funding data was collected)
+    # otherwise ends up as pandas "object" dtype, which XGBoost rejects outright.
+    df[ALL_FEATURE_COLUMNS] = df[ALL_FEATURE_COLUMNS].astype(float)
+    return df
 
 
 def dataset_dir() -> Path:

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Walk-forward run #{{ run.id }}{% endblock %}
+
+{% block content %}
+<h1>Walk-forward run #{{ run.id }} — {{ run.strategy.name }} on {{ run.symbol.symbol }} {{ run.timeframe }}</h1>
+<p>
+    Mode: {{ run.get_mode_display }} · Training window: {{ run.training_months }}mo · Test window: {{ run.test_months }}mo ·
+    Retrain every {{ run.retrain_months }}mo · P(win) threshold: {{ run.probability_threshold }}
+</p>
+<p><span class="badge badge-{{ run.status }}">{{ run.get_status_display }}</span></p>
+
+<h2>Aggregate out-of-sample performance</h2>
+<p style="color:#6b7280;">Computed only from test-window trades across all windows — training-period results are never included.</p>
+{% if run.aggregate_metrics %}
+<div class="grid-cards" style="margin: 1rem 0;">
+    <div class="card"><div class="label">Total return</div><div class="value">{{ run.aggregate_metrics.total_return_pct|floatformat:2 }}%</div></div>
+    <div class="card"><div class="label">Profit factor</div><div class="value">{{ run.aggregate_metrics.profit_factor|floatformat:2|default:"—" }}</div></div>
+    <div class="card"><div class="label">Max drawdown</div><div class="value">{{ run.aggregate_metrics.max_drawdown_pct|floatformat:2 }}%</div></div>
+    <div class="card"><div class="label">Sharpe</div><div class="value">{{ run.aggregate_metrics.sharpe_ratio|floatformat:2|default:"—" }}</div></div>
+    <div class="card"><div class="label">Total trades</div><div class="value">{{ run.aggregate_metrics.total_trades }}</div></div>
+</div>
+{% else %}
+<p>Not completed yet.</p>
+{% endif %}
+
+<h2>Windows</h2>
+<div class="table-wrap">
+<table>
+    <thead>
+        <tr><th>Window</th><th>Training period</th><th>Test period</th><th>Trades</th><th>Return</th><th>Profit factor</th><th>Max DD</th><th>Sharpe</th></tr>
+    </thead>
+    <tbody>
+        {% for w in windows %}
+        <tr>
+            <td>{{ w.index }}</td>
+            <td>{{ w.train_start|date:"Y-m-d" }} → {{ w.train_end|date:"Y-m-d" }}</td>
+            <td>{{ w.test_start|date:"Y-m-d" }} → {{ w.test_end|date:"Y-m-d" }}</td>
+            <td>{{ w.metrics.total_trades }}</td>
+            <td class="{% if w.metrics.total_return_pct >= 0 %}ok{% else %}bad{% endif %}">{{ w.metrics.total_return_pct|floatformat:2 }}%</td>
+            <td>{{ w.metrics.profit_factor|floatformat:2|default:"—" }}</td>
+            <td>{{ w.metrics.max_drawdown_pct|floatformat:2 }}%</td>
+            <td>{{ w.metrics.sharpe_ratio|floatformat:2|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8">No windows.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

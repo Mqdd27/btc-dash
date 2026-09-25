@@ -10,6 +10,7 @@ from core.quant.metrics import compute_metrics
 from .dataset import ALL_FEATURE_COLUMNS, LABEL_COLUMN, load_split
 from .models import ModelVersion
 from .prediction import DEFAULT_WIN_PROBABILITY_THRESHOLD, load_model
+from .training import classification_metrics as compute_classification_metrics
 
 TRADING_METRIC_KEYS = ["total_return_pct", "final_capital", "profit_factor", "max_drawdown_pct", "sharpe_ratio", "total_trades"]
 
@@ -26,9 +27,7 @@ def evaluate_model(
     proba = model.predict_proba(X_test)[:, 1]
     y_pred = (proba >= 0.5).astype(int)
 
-    from .training import _classification_metrics  # local import: avoids a training<->evaluation cycle at module load
-
-    classification_metrics = _classification_metrics(y_test, y_pred, proba)
+    test_metrics = compute_classification_metrics(y_test, y_pred, proba)
 
     test_start = test_df["signal_timestamp"].min().to_pydatetime()
     test_end = test_df["signal_timestamp"].max().to_pydatetime()
@@ -36,7 +35,7 @@ def evaluate_model(
 
     model_version.validation_metrics = {
         **(model_version.validation_metrics or {}),
-        "test": classification_metrics,
+        "test": test_metrics,
         "trading_comparison": trading_comparison,
     }
     model_version.save(update_fields=["validation_metrics"])
