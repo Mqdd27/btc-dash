@@ -9,3 +9,4 @@ staticfiles/
 .pytest_cache/
 .DS_Store
 media/
+celerybeat-schedule.db

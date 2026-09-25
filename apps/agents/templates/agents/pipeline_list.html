@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}AI Agents{% endblock %}
+
+{% block content %}
+<h1>TradingAgents runs</h1>
+<p>Every candidate that passed the XGBoost threshold in Full Agent mode — one row per full 7-agent review.</p>
+
+<div class="table-wrap">
+<table>
+    <thead>
+        <tr><th>ID</th><th>Symbol</th><th>Timeframe</th><th>Signal candle</th><th>Baseline side</th><th>Final recommendation</th><th>Tokens</th><th>Est. cost</th><th></th></tr>
+    </thead>
+    <tbody>
+        {% for run in runs %}
+        <tr>
+            <td>{{ run.id }}</td>
+            <td>{{ run.signal.symbol.symbol }}</td>
+            <td>{{ run.signal.timeframe }}</td>
+            <td>{{ run.signal.timestamp|date:"Y-m-d H:i" }}</td>
+            <td>{{ run.signal.baseline_side }}</td>
+            <td>
+                <span class="badge {% if run.final_recommendation == 'LONG' %}badge-completed{% elif run.final_recommendation == 'SHORT' %}badge-failed{% else %}badge-running{% endif %}">
+                    {{ run.final_recommendation }}
+                </span>
+            </td>
+            <td>{{ run.total_input_tokens }} in / {{ run.total_output_tokens }} out</td>
+            <td>{% if run.total_estimated_cost %}${{ run.total_estimated_cost|floatformat:4 }}{% else %}—{% endif %}</td>
+            <td><a href="{% url 'agent-pipeline-detail' run.id %}">View trace</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9">No TradingAgents runs yet — switch the engine to Full Agent mode with AI_ENABLED=True to produce some.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

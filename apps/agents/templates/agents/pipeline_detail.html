@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Agent run #{{ run.id }}{% endblock %}
+
+{% block content %}
+<h1>TradingAgents run #{{ run.id }}</h1>
+<p>
+    {{ run.signal.symbol.symbol }} {{ run.signal.timeframe }} · signal candle {{ run.signal.timestamp|date:"Y-m-d H:i" }} ·
+    baseline side <strong>{{ run.signal.baseline_side }}</strong> ·
+    XGBoost P(win) {{ run.signal.model_probability|floatformat:3|default:"—" }}
+    {% if run.signal.model_version %}· model {{ run.signal.model_version.name }}{% endif %}
+</p>
+<p><a href="{% url 'agent-pipeline-list' %}">← All runs</a></p>
+
+<div class="grid-cards" style="margin: 1rem 0;">
+    <div class="card">
+        <div class="label">Final recommendation</div>
+        <div class="value">
+            <span class="badge {% if run.final_recommendation == 'LONG' %}badge-completed{% elif run.final_recommendation == 'SHORT' %}badge-failed{% else %}badge-running{% endif %}">
+                {{ run.final_recommendation }}
+            </span>
+        </div>
+    </div>
+    <div class="card"><div class="label">Total tokens</div><div class="value">{{ run.total_input_tokens }} / {{ run.total_output_tokens }}</div></div>
+    <div class="card"><div class="label">Estimated cost</div><div class="value">{% if run.total_estimated_cost %}${{ run.total_estimated_cost|floatformat:4 }}{% else %}—{% endif %}</div></div>
+    <div class="card"><div class="label">Total latency</div><div class="value">{{ run.total_latency_ms|floatformat:0 }}ms</div></div>
+</div>
+
+<h2>Pipeline trace</h2>
+<p style="color:#6b7280;">Each stage's actual structured output, in the order the pipeline ran them. A cached step reused a prior identical result — no new API call.</p>
+
+{% for step in steps %}
+    {% if step.agent_name == "bull_researcher" %}<h3 style="margin-top:1.5rem;">Research (Bull vs. Bear)</h3>{% endif %}
+    {% if step.agent_name == "trader" %}<h3 style="margin-top:1.5rem;">Decision</h3>{% endif %}
+    {% if step.agent_name == "risk_reviewer" %}<h3 style="margin-top:1.5rem;">Final Gate — Risk Reviewer</h3>{% endif %}
+    {% if step.agent_name == "technical_analyst" %}<h3 style="margin-top:0;">Analysts</h3>{% endif %}
+
+    <div class="card" style="{% if step.agent_name == 'risk_reviewer' %}border-color:{% if step.output.approved %}#16a34a{% else %}#dc2626{% endif %};{% endif %}">
+        <h4 style="margin: 0 0 0.5rem;">
+            {{ step.get_agent_name_display }}
+            {% if step.cached %}<span class="badge badge-completed" style="font-size:0.7rem;">cached</span>{% endif %}
+        </h4>
+        <table>
+            <tbody>
+                {% for key, value in step.output.items %}
+                <tr><td style="white-space:nowrap; color:#6b7280;">{{ key }}</td><td>{{ value }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p style="color:#6b7280; font-size:0.85rem; margin: 0.5rem 0 0;">
+            {{ step.input_tokens }} in / {{ step.output_tokens }} out tokens ·
+            {% if step.estimated_cost %}${{ step.estimated_cost|floatformat:5 }}{% else %}$0{% endif %} ·
+            {{ step.latency_ms|floatformat:0 }}ms · {{ step.model }}
+        </p>
+    </div>
+    {% if not forloop.last %}<div style="text-align:center; color:#9ca3af; margin: 0.25rem 0;">↓</div>{% endif %}
+{% empty %}
+<p>No steps recorded for this run.</p>
+{% endfor %}
+{% endblock %}

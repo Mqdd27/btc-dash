@@ -6,5 +6,6 @@ urlpatterns = [
     path("backtests/", include("apps.backtest.urls")),
     path("walk-forward/", include("apps.ml.urls")),
     path("engine/", include("apps.trading.urls")),
+    path("ai-agents/", include("apps.agents.urls")),
     path("", include("apps.dashboard.urls")),
 ]
