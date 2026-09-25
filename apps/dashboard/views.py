@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.shortcuts import render
 
+from apps.agents.services import get_ai_reviewer_stats
 from apps.market.features import get_feature_stats
 from apps.market.services import get_symbol_stats
 from apps.trading.services import get_engine_config, get_live_engine_stats, get_paper_account_stats
@@ -17,6 +18,7 @@ def dashboard_view(request):
         "engine": engine,
         "live_engine": get_live_engine_stats(engine),
         "paper": get_paper_account_stats(),
+        "ai": get_ai_reviewer_stats(),
         "market_stats": get_symbol_stats("BTCUSDT", "1h"),
         "feature_stats": get_feature_stats("BTCUSDT", "1h"),
     }

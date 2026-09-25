@@ -103,6 +103,15 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+# --- AI reviewer (apps/agents) ---
+# Safety default: off, same pattern as EngineConfig.enabled. With this False,
+# review_candidate() never calls the API -- quant-only behavior, 0 AI calls.
+AI_ENABLED = env.bool("AI_ENABLED", default=False)
+AI_MODEL = env("AI_MODEL", default="claude-opus-5")
+AI_DAILY_CALL_LIMIT = env.int("AI_DAILY_CALL_LIMIT", default=50)
+AI_MIN_QUANT_PROBABILITY = env.float("AI_MIN_QUANT_PROBABILITY", default=0.65)
+AI_MAX_OUTPUT_TOKENS = env.int("AI_MAX_OUTPUT_TOKENS", default=256)
+
 # --- Structured logging (JSON to stdout) ---
 LOGGING = {
     "version": 1,

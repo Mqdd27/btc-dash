@@ -48,7 +48,7 @@
         <p><button class="btn" type="submit">Save configuration</button></p>
     </form>
     <p style="color:#6b7280;">Live order execution is not implemented — "Paper" only ever creates virtual positions, never a real exchange order.</p>
-    {% if engine.mode != "quant" %}<p class="bad">Only Quant mode actually evaluates anything yet.</p>{% endif %}
+    {% if engine.mode == "full_agent" %}<p class="bad">Full Agent mode isn't implemented yet — the engine won't evaluate anything in this mode.</p>{% endif %}
 
     <h3>Status</h3>
     <p>Last evaluation: {{ live_engine.last_evaluation_at|default:"—" }}</p>
@@ -56,6 +56,18 @@
     <p>Last signal: {% if live_engine.last_signal %}{{ live_engine.last_signal.decision }} @ {{ live_engine.last_signal.timestamp }}{% else %}—{% endif %}</p>
     <p>Model probability: {{ live_engine.last_signal.model_probability|floatformat:3|default:"—" }}</p>
     <p>Inferences today: {{ live_engine.daily_inference_count }}</p>
+</div>
+
+<div class="card">
+    <h2>AI Reviewer</h2>
+    <p>Status: <span class="badge {% if ai.ai_enabled %}badge-completed{% else %}badge-failed{% endif %}">{{ ai.ai_enabled|yesno:"ON,OFF" }}</span> (set via AI_ENABLED — no dashboard toggle for this, on purpose)</p>
+    <p>Calls today: {{ ai.calls_today }} / {{ ai.daily_call_limit }}</p>
+    <p>Input tokens today: {{ ai.input_tokens_today }}</p>
+    <p>Output tokens today: {{ ai.output_tokens_today }}</p>
+    <p>Cache hits today: {{ ai.cache_hits_today }}</p>
+    <p>Estimated cost today: ${{ ai.estimated_cost_today|floatformat:4 }}</p>
+    <p>Last AI decision: {% if ai.last_decision %}{{ ai.last_decision.decision }} ({{ ai.last_decision.confidence|floatformat:2 }}) — {{ ai.last_decision.reason }}{% else %}—{% endif %}</p>
+    <p style="color:#6b7280;">Only runs for Quant + AI mode candidates that already cleared the XGBoost threshold — never on every candle. Falls back to quant-only once the daily call limit is hit.</p>
 </div>
 
 <div class="card">

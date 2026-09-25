@@ -32,10 +32,10 @@ def test_disabled_engine_never_evaluates(symbol):
 
 
 @pytest.mark.django_db
-def test_non_quant_mode_never_evaluates(symbol):
+def test_unimplemented_mode_never_evaluates(symbol):
     engine = get_engine_config()
     engine.enabled = True
-    engine.mode = EngineConfig.Mode.QUANT_AI
+    engine.mode = EngineConfig.Mode.FULL_AGENT  # only remaining unimplemented mode
     engine.save()
 
     with patch("apps.trading.tasks.evaluate_now") as mock_evaluate:
@@ -121,3 +121,61 @@ def test_a_real_signal_is_handed_to_paper_trading(symbol):
 
     mock_advance.assert_called_once_with(engine, candle, fake_signal)
     assert result == "evaluated: LONG"
+
+
+@pytest.mark.django_db
+def test_quant_ai_mode_reviews_actionable_signals(symbol):
+    engine = get_engine_config()
+    engine.enabled = True
+    engine.mode = EngineConfig.Mode.QUANT_AI
+    engine.timeframe = "1h"
+    engine.save()
+
+    candle_ts = datetime(2024, 1, 1, 13, 0, tzinfo=dt_timezone.utc)
+    Candle.objects.create(
+        symbol=symbol, timeframe="1h", timestamp=candle_ts,
+        open=100, high=101, low=99, close=100, volume=1, closed=True,
+    )
+    snapshot = FeatureSnapshot.objects.create(symbol=symbol, timeframe="1h", timestamp=candle_ts)
+    fake_signal = LiveSignal(
+        timestamp=candle_ts, symbol=symbol, timeframe="1h",
+        baseline_side="LONG", decision="LONG", feature_snapshot=snapshot, stop_loss=95, take_profit=110,
+    )
+
+    with patch("apps.trading.tasks.timezone") as mock_timezone, \
+         patch("apps.trading.tasks.evaluate_now", return_value=fake_signal), \
+         patch("apps.agents.reviewer.review_candidate") as mock_review, \
+         patch("apps.trading.tasks.advance_paper_trading"):
+        mock_timezone.now.return_value = NOW
+        check_for_new_candle()
+
+    mock_review.assert_called_once_with(fake_signal)
+
+
+@pytest.mark.django_db
+def test_quant_ai_mode_never_reviews_a_wait_decision(symbol):
+    engine = get_engine_config()
+    engine.enabled = True
+    engine.mode = EngineConfig.Mode.QUANT_AI
+    engine.timeframe = "1h"
+    engine.save()
+
+    candle_ts = datetime(2024, 1, 1, 13, 0, tzinfo=dt_timezone.utc)
+    Candle.objects.create(
+        symbol=symbol, timeframe="1h", timestamp=candle_ts,
+        open=100, high=101, low=99, close=100, volume=1, closed=True,
+    )
+    snapshot = FeatureSnapshot.objects.create(symbol=symbol, timeframe="1h", timestamp=candle_ts)
+    fake_signal = LiveSignal(
+        timestamp=candle_ts, symbol=symbol, timeframe="1h",
+        baseline_side="WAIT", decision="WAIT", feature_snapshot=snapshot,
+    )
+
+    with patch("apps.trading.tasks.timezone") as mock_timezone, \
+         patch("apps.trading.tasks.evaluate_now", return_value=fake_signal), \
+         patch("apps.agents.reviewer.review_candidate") as mock_review, \
+         patch("apps.trading.tasks.advance_paper_trading"):
+        mock_timezone.now.return_value = NOW
+        check_for_new_candle()
+
+    mock_review.assert_not_called()
