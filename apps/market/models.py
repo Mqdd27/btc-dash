@@ -64,3 +64,61 @@ class OpenInterest(models.Model):
             models.UniqueConstraint(fields=["symbol", "timestamp"], name="unique_open_interest")
         ]
         ordering = ["timestamp"]
+
+
+class FeatureSnapshot(models.Model):
+    """One row of engineered features per finalized candle. All values are computed
+    using only that candle's timestamp and earlier -- see apps/market/features.py."""
+
+    symbol = models.ForeignKey(MarketSymbol, on_delete=models.CASCADE, related_name="feature_snapshots")
+    timeframe = models.CharField(max_length=10)
+    timestamp = models.DateTimeField()
+
+    # technical
+    return_1 = models.FloatField(null=True)
+    return_4 = models.FloatField(null=True)
+    return_24 = models.FloatField(null=True)
+    log_return = models.FloatField(null=True)
+    ema_10 = models.FloatField(null=True)
+    ema_20 = models.FloatField(null=True)
+    ema_50 = models.FloatField(null=True)
+    ema_100 = models.FloatField(null=True)
+    ema_200 = models.FloatField(null=True)
+    rsi_14 = models.FloatField(null=True)
+    macd = models.FloatField(null=True)
+    macd_signal = models.FloatField(null=True)
+    macd_histogram = models.FloatField(null=True)
+    atr_14 = models.FloatField(null=True)
+    bollinger_upper = models.FloatField(null=True)
+    bollinger_middle = models.FloatField(null=True)
+    bollinger_lower = models.FloatField(null=True)
+    bollinger_bandwidth = models.FloatField(null=True)
+    rolling_volatility = models.FloatField(null=True)
+    volume_sma = models.FloatField(null=True)
+    volume_change = models.FloatField(null=True)
+    volume_zscore = models.FloatField(null=True)
+
+    # derived
+    distance_close_ema20 = models.FloatField(null=True)
+    distance_close_ema50 = models.FloatField(null=True)
+    distance_close_ema200 = models.FloatField(null=True)
+    ema20_vs_ema50 = models.FloatField(null=True)
+    ema50_vs_ema200 = models.FloatField(null=True)
+    atr_percent = models.FloatField(null=True)
+    candle_body_percent = models.FloatField(null=True)
+    upper_wick_percent = models.FloatField(null=True)
+    lower_wick_percent = models.FloatField(null=True)
+
+    # derivatives (only populated where funding/OI data exists)
+    funding_rate = models.FloatField(null=True)
+    funding_rate_change = models.FloatField(null=True)
+    open_interest = models.FloatField(null=True)
+    open_interest_change = models.FloatField(null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["symbol", "timeframe", "timestamp"], name="unique_feature_snapshot"
+            )
+        ]
+        ordering = ["timestamp"]

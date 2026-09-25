@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.shortcuts import render
 
+from apps.market.features import get_feature_stats
 from apps.market.services import get_symbol_stats
 from apps.trading.services import get_engine_config
 from core.health import celery_configured, check_database, check_redis
@@ -14,6 +15,7 @@ def dashboard_view(request):
         "celery_ok": celery_configured(),
         "engine": get_engine_config(),
         "market_stats": get_symbol_stats("BTCUSDT", "1h"),
+        "feature_stats": get_feature_stats("BTCUSDT", "1h"),
     }
     return render(request, "dashboard/index.html", context)
 

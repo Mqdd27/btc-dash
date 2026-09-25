@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Candle, FundingRate, MarketSymbol, OpenInterest
+from .models import Candle, FeatureSnapshot, FundingRate, MarketSymbol, OpenInterest
 
 
 @admin.register(MarketSymbol)
@@ -22,3 +22,9 @@ class FundingRateAdmin(admin.ModelAdmin):
 @admin.register(OpenInterest)
 class OpenInterestAdmin(admin.ModelAdmin):
     list_display = ("symbol", "timestamp", "open_interest")
+
+
+@admin.register(FeatureSnapshot)
+class FeatureSnapshotAdmin(admin.ModelAdmin):
+    list_display = ("symbol", "timeframe", "timestamp", "rsi_14", "macd")
+    list_filter = ("symbol", "timeframe")

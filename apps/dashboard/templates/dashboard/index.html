@@ -33,4 +33,16 @@
     <p>No data yet. Run <code>manage.py fetch_historical --symbol BTCUSDT --timeframe 1h ...</code></p>
     {% endif %}
 </div>
+
+<div class="card">
+    <h2>Features — BTCUSDT 1H</h2>
+    {% if feature_stats %}
+    <p>Candle count: {{ feature_stats.candle_count }}</p>
+    <p>Feature snapshot count: {{ feature_stats.feature_count }}</p>
+    <p>First feature: {{ feature_stats.first_feature_timestamp|default:"—" }}</p>
+    <p>Last feature: {{ feature_stats.last_feature_timestamp|default:"—" }}</p>
+    {% else %}
+    <p>No data yet. Run <code>manage.py build_features --symbol BTCUSDT --timeframe 1h ...</code></p>
+    {% endif %}
+</div>
 {% endblock %}
