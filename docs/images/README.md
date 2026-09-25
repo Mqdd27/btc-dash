@@ -1,14 +1,20 @@
 # Screenshots for `docs/USAGE.md`
 
-18/20 filled in (captured live against `localhost:8000` with real seeded
-data — no mocks). Still missing:
-
-- `agents-detail-top.png` / `agents-detail-trace.png` — no `AgentPipelineRun`
-  exists yet (Full Agent mode has never produced a real run on this machine).
-  Once one exists (run the engine in Full Agent mode with `AI_ENABLED=True`,
-  or `compare_strategies` variant D), take these with the app running
-  (`./scripts/start_dev.sh`), save as PNG with the exact filename below, drop
-  them in this folder. No markdown edits needed once they exist.
+20/20 filled in. 18 are captured live against `localhost:8000` with real
+seeded data — no mocks. The remaining two, `agents-detail-top.png` and
+`agents-detail-trace.png`, use the real `agents/pipeline_detail.html`
+template rendering a manually-seeded example `AgentPipelineRun` (layout,
+fields and flow are 100% the real app; only the per-agent text is written
+by hand). This was necessary because no real one existed yet: Full Agent
+mode had never produced a real run on this machine, and a real attempt at
+doc time failed with a genuine `400: insufficient account credit balance`
+from Anthropic — a billing issue, not a code problem (see `docs/USAGE.md`
+section 5.2 for the same caveat). Once a real `AgentPipelineRun` exists
+(run the engine in Full Agent mode with `AI_ENABLED=True` and real credit
+on the account, or `compare_strategies` variant D), replace these two
+files the same way: run the app, capture the exact regions below, save as
+PNG with the filename in the table, drop them in this folder. No markdown
+edits needed.
 
 | Filename | Page URL | What to capture |
 |---|---|---|

@@ -159,6 +159,8 @@ Setiap kandidat yang direview lengkap oleh 7-agent pipeline: symbol, timeframe, 
 
 ### 5.2 Detail trace — di sinilah "kenapa" keputusan trading bisa dilihat
 
+> **Catatan**: dua screenshot di bawah ini pakai data **contoh** (diisi manual ke database, bukan hasil panggilan Claude sungguhan) — saat didokumentasikan, akun Anthropic project ini belum ada kredit sama sekali, jadi belum pernah ada `AgentPipelineRun` asli untuk difoto. Layout, field, dan alur di screenshot 100% dari halaman/template aplikasi yang sebenarnya; hanya isi teks tiap agent yang ditulis manual sebagai ilustrasi.
+
 ![Detail trace agent - bagian atas](images/agents-detail-top.png)
 *Header: sinyal yang direview (symbol, timeframe, waktu candle, sisi baseline, probabilitas XGBoost), rekomendasi final, dan total token/biaya/latency.*
 

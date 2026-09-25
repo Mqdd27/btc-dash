@@ -32,4 +32,9 @@ def get_active_model_version(
 def predict_win_probability(model_version: ModelVersion, features: pd.DataFrame) -> pd.Series:
     """features must have all of ALL_FEATURE_COLUMNS. Returns P(win) per row."""
     model = load_model(model_version)
-    return pd.Series(model.predict_proba(features[ALL_FEATURE_COLUMNS])[:, 1], index=features.index)
+    # A column that's None for every row in `features` (e.g. funding/open interest
+    # before that data existed) infers as object dtype, which XGBoost rejects outright.
+    # Same fix as apps/ml/dataset.py::build_split_dataset -- cast here too since every
+    # caller builds its own small ad-hoc DataFrame.
+    x = features[ALL_FEATURE_COLUMNS].astype(float)
+    return pd.Series(model.predict_proba(x)[:, 1], index=features.index)
