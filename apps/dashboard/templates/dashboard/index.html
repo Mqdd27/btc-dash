@@ -19,4 +19,18 @@
     <p>Timeframe: {{ engine.get_timeframe_display }}</p>
     <p>Execution: {{ engine.get_execution_mode_display }}</p>
 </div>
+
+<div class="card">
+    <h2>Market Data — BTCUSDT 1H</h2>
+    {% if market_stats %}
+    <p>First candle: {{ market_stats.first_candle|default:"—" }}</p>
+    <p>Last candle: {{ market_stats.last_candle|default:"—" }}</p>
+    <p>Candle count: {{ market_stats.candle_count }}</p>
+    <p>Missing candles: {{ market_stats.missing_candle_count }}</p>
+    <p>Funding records: {{ market_stats.funding_count }}</p>
+    <p>Open interest records: {{ market_stats.open_interest_count }}</p>
+    {% else %}
+    <p>No data yet. Run <code>manage.py fetch_historical --symbol BTCUSDT --timeframe 1h ...</code></p>
+    {% endif %}
+</div>
 {% endblock %}
