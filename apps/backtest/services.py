@@ -41,6 +41,31 @@ def create_backtest_run(
     )
 
 
+def load_candle_bars(symbol: MarketSymbol, timeframe: str, start, end) -> list[CandleBar]:
+    return [
+        CandleBar(timestamp=row["timestamp"], open=float(row["open"]), high=float(row["high"]),
+                   low=float(row["low"]), close=float(row["close"]))
+        for row in Candle.objects.filter(
+            symbol=symbol, timeframe=timeframe, closed=True, timestamp__gte=start, timestamp__lte=end,
+        ).order_by("timestamp").values("timestamp", "open", "high", "low", "close")
+    ]
+
+
+def load_signal_inputs(
+    strategy_config: StrategyConfig, symbol: MarketSymbol, timeframe: str, start, end
+) -> list[SignalInput]:
+    return [
+        SignalInput(
+            timestamp=row["candle_timestamp"], side=row["side"],
+            stop_loss=row["stop_loss_reference"], take_profit=row["take_profit_reference"],
+        )
+        for row in SignalCandidate.objects.filter(
+            strategy=strategy_config, symbol=symbol, timeframe=timeframe,
+            candle_timestamp__gte=start, candle_timestamp__lte=end,
+        ).values("candle_timestamp", "side", "stop_loss_reference", "take_profit_reference")
+    ]
+
+
 def execute_backtest(backtest: BacktestRun) -> BacktestRun:
     """The actual simulation work. Safe to call directly (CLI/tests) or from a
     Celery task -- this function itself has no opinion on how it's invoked."""
@@ -52,24 +77,10 @@ def execute_backtest(backtest: BacktestRun) -> BacktestRun:
             backtest.strategy, backtest.symbol, backtest.timeframe, backtest.start_date, backtest.end_date
         )  # idempotent
 
-        candles = [
-            CandleBar(timestamp=row["timestamp"], open=float(row["open"]), high=float(row["high"]),
-                       low=float(row["low"]), close=float(row["close"]))
-            for row in Candle.objects.filter(
-                symbol=backtest.symbol, timeframe=backtest.timeframe, closed=True,
-                timestamp__gte=backtest.start_date, timestamp__lte=backtest.end_date,
-            ).order_by("timestamp").values("timestamp", "open", "high", "low", "close")
-        ]
-        signals = [
-            SignalInput(
-                timestamp=row["candle_timestamp"], side=row["side"],
-                stop_loss=row["stop_loss_reference"], take_profit=row["take_profit_reference"],
-            )
-            for row in SignalCandidate.objects.filter(
-                strategy=backtest.strategy, symbol=backtest.symbol, timeframe=backtest.timeframe,
-                candle_timestamp__gte=backtest.start_date, candle_timestamp__lte=backtest.end_date,
-            ).values("candle_timestamp", "side", "stop_loss_reference", "take_profit_reference")
-        ]
+        candles = load_candle_bars(backtest.symbol, backtest.timeframe, backtest.start_date, backtest.end_date)
+        signals = load_signal_inputs(
+            backtest.strategy, backtest.symbol, backtest.timeframe, backtest.start_date, backtest.end_date
+        )
 
         engine_config = BacktestEngineConfig(**backtest.configuration)
         trades, _equity_curve = run_engine(candles, signals, engine_config)
