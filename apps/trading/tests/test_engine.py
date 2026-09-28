@@ -109,3 +109,15 @@ def test_same_candle_is_never_evaluated_twice(symbol, strategy_config):
     assert first is not None
     assert second is None
     assert LiveSignal.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_at_evaluates_past_candle_not_latest(symbol, strategy_config):
+    seed_candle_and_snapshot(symbol, ema_20=110, ema_50=100, rsi_14=65)  # 14:00, missed
+    seed_candle_and_snapshot(symbol, ema_20=100, ema_50=100, rsi_14=50, ts=datetime(2024, 1, 1, 15, 0, tzinfo=dt_timezone.utc))
+
+    with patch("apps.trading.engine.update_recent"), patch("apps.trading.engine.build_features"):
+        signal = evaluate_now(strategy_config, symbol, "1h", at=datetime(2024, 1, 1, 14, 30, tzinfo=dt_timezone.utc))
+
+    assert signal.timestamp == TS
+    assert signal.baseline_side == "LONG"

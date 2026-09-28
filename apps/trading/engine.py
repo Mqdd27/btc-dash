@@ -31,9 +31,10 @@ from core.quant.strategy import EmaRsiStrategy, Signal, StrategyParams
 from .models import LiveSignal
 
 
-def evaluate_now(strategy_config: StrategyConfig, symbol: MarketSymbol, timeframe: str) -> LiveSignal | None:
+def evaluate_now(strategy_config: StrategyConfig, symbol: MarketSymbol, timeframe: str, at=None) -> LiveSignal | None:
     """Runs the full pipeline for whatever the latest finalized candle is right
-    now. Returns None if there's nothing new to evaluate (already evaluated,
+    now -- or, with `at`, the latest finalized candle opening at or before `at`
+    (catch-up for a candle missed while the engine wasn't running). Returns None if there's nothing new to evaluate (already evaluated,
     or data/features for the latest candle aren't ready yet) -- idempotent,
     safe to call repeatedly.
     """
@@ -43,7 +44,10 @@ def evaluate_now(strategy_config: StrategyConfig, symbol: MarketSymbol, timefram
     feature_start = last_feature.timestamp if last_feature else timezone.now() - timedelta(days=30)
     build_features(symbol, timeframe, feature_start, timezone.now())  # 2. build latest features
 
-    candle = Candle.objects.filter(symbol=symbol, timeframe=timeframe, closed=True).order_by("-timestamp").first()
+    candles = Candle.objects.filter(symbol=symbol, timeframe=timeframe, closed=True)
+    if at is not None:
+        candles = candles.filter(timestamp__lte=at)
+    candle = candles.order_by("-timestamp").first()
     if candle is None:
         return None
     if LiveSignal.objects.filter(symbol=symbol, timeframe=timeframe, timestamp=candle.timestamp).exists():

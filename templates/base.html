@@ -26,9 +26,18 @@
         .badge-queued, .badge-running { background: #fef3c7; color: #92400e; }
         .badge-completed { background: #dcfce7; color: #166534; }
         .badge-failed { background: #fee2e2; color: #991b1b; }
+        .signal-badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 6px; font-weight: 700; font-size: 1rem; }
+        .signal-long { background: #dcfce7; color: #166534; }
+        .signal-short { background: #fee2e2; color: #991b1b; }
+        .signal-wait { background: #f3f4f6; color: #4b5563; }
         form.stacked label { display: block; margin: 0.6rem 0 0.2rem; }
         form.stacked input, form.stacked select { padding: 0.4rem; border: 1px solid #d1d5db; border-radius: 4px; width: 100%; max-width: 320px; }
         .btn { display: inline-block; padding: 0.5rem 1rem; background: #111827; color: #fff; border: none; border-radius: 4px; text-decoration: none; cursor: pointer; }
+        .flash { padding: 0.6rem 1rem; border-radius: 6px; margin-bottom: 1rem; }
+        .flash-error { background: #fee2e2; color: #991b1b; }
+        .flash-warning { background: #fef3c7; color: #92400e; }
+        .flash-success { background: #dcfce7; color: #166534; }
+        .btn:disabled { opacity: 0.6; cursor: wait; }
         .filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
         .chart { height: 300px; margin-bottom: 1.5rem; }
         @media (max-width: 768px) {
@@ -50,9 +59,44 @@
         <a href="{% url 'agent-pipeline-list' %}">AI Agents</a>
         <a href="/admin/trading/">Trading</a>
         <a href="/admin/">Settings</a>
+        <a href="#" id="notif-toggle" onclick="enableSignalNotifications(); return false;">🔔 Enable notifications</a>
     </nav>
     <main>
+        {% for message in messages %}<div class="flash flash-{{ message.tags }}" role="alert">{{ message }}</div>{% endfor %}
         {% block content %}{% endblock %}
     </main>
+    <script>
+        // ponytail: polling instead of Web Push -- no service worker/VAPID/push
+        // server needed since this only has to fire while the tab is open.
+        // Upgrade to real Push API if "notify while browser is fully closed" is needed.
+        const SIGNAL_POLL_MS = 30000;
+        function enableSignalNotifications() {
+            if (!("Notification" in window)) { alert("Browser ini tidak mendukung notifikasi."); return; }
+            Notification.requestPermission().then((perm) => {
+                document.getElementById("notif-toggle").textContent = perm === "granted" ? "🔔 Notifications on" : "🔕 Notifications blocked";
+            });
+        }
+        async function pollLatestSignal() {
+            if (Notification.permission !== "granted") return;
+            try {
+                const res = await fetch("{% url 'latest-signal' %}");
+                const data = await res.json();
+                if (data.id === null) return;
+                const seenId = localStorage.getItem("lastSeenSignalId");
+                if (seenId !== null && parseInt(seenId, 10) === data.id) return;
+                localStorage.setItem("lastSeenSignalId", data.id);
+                if (seenId !== null) {  // skip the notification on first-ever poll (nothing "new" yet)
+                    new Notification("BTC Trader: " + data.decision, {
+                        body: "Signal @ " + new Date(data.timestamp).toLocaleString(),
+                    });
+                }
+            } catch (e) { /* network hiccup -- next poll retries */ }
+        }
+        if ("Notification" in window && Notification.permission === "granted") {
+            document.getElementById("notif-toggle").textContent = "🔔 Notifications on";
+        }
+        setInterval(pollLatestSignal, SIGNAL_POLL_MS);
+        pollLatestSignal();
+    </script>
 </body>
 </html>

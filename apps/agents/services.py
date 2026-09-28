@@ -33,4 +33,5 @@ def get_ai_reviewer_stats() -> dict:
         ),
         "last_decision": last_decision,
         "last_pipeline_run": last_pipeline_run,
+        "min_quant_probability": settings.AI_MIN_QUANT_PROBABILITY,
     }

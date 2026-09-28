@@ -18,7 +18,11 @@ RETRYABLE_ERRORS = (
 
 
 def get_spot_exchange():
-    return ccxt.binance({"enableRateLimit": True})
+    # ccxt's binance client loads spot+linear+inverse markets by default even
+    # though this app only ever fetches spot candles here -- that dragged in
+    # a dependency on dapi.binance.com (inverse futures) staying reachable
+    # just to load market metadata never actually used.
+    return ccxt.binance({"enableRateLimit": True, "options": {"fetchMarkets": ["spot"]}})
 
 
 def get_futures_exchange():

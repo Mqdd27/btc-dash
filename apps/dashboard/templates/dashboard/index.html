@@ -48,28 +48,22 @@
         <p><button class="btn" type="submit">Save configuration</button></p>
     </form>
     <p style="color:#6b7280;">Live order execution is not implemented — "Paper" only ever creates virtual positions, never a real exchange order.</p>
+    <form method="post" action="{% url 'engine-evaluate-past' %}" class="stacked"
+          onsubmit="const b = this.querySelector('button'); b.disabled = true; b.textContent = '⏳ Fetching data & evaluating…';">
+        {% csrf_token %}
+        <label for="at">Get missed signal (candle opening at, WIB)</label>
+        <input type="datetime-local" name="at" id="at" required>
+        <p><button class="btn" type="submit">Get signal</button></p>
+    </form>
     {% if engine.mode == "full_agent" %}<p class="bad">Full Agent mode isn't implemented yet — the engine won't evaluate anything in this mode.</p>{% endif %}
 
-    <h3>Status</h3>
-    <p>Last evaluation: {{ live_engine.last_evaluation_at|default:"—" }}</p>
-    <p>Next expected candle: {{ live_engine.next_expected_candle|default:"— (engine off)" }}</p>
-    <p>Last signal: {% if live_engine.last_signal %}{{ live_engine.last_signal.decision }} @ {{ live_engine.last_signal.timestamp }}{% else %}—{% endif %}</p>
-    <p>Model probability: {{ live_engine.last_signal.model_probability|floatformat:3|default:"—" }}</p>
-    <p>Inferences today: {{ live_engine.daily_inference_count }}</p>
+    <div id="live-signal-panel" hx-get="{% url 'live-panel-fragment' %}" hx-trigger="every 30s" hx-swap="innerHTML">
+        {% include "dashboard/_live_signal.html" %}
+    </div>
 </div>
 
-<div class="card">
-    <h2>AI Reviewer</h2>
-    <p>Status: <span class="badge {% if ai.ai_enabled %}badge-completed{% else %}badge-failed{% endif %}">{{ ai.ai_enabled|yesno:"ON,OFF" }}</span> (set via AI_ENABLED — no dashboard toggle for this, on purpose)</p>
-    <p>Calls today: {{ ai.calls_today }} / {{ ai.daily_call_limit }}</p>
-    <p>Input tokens today: {{ ai.input_tokens_today }}</p>
-    <p>Output tokens today: {{ ai.output_tokens_today }}</p>
-    <p>Cache hits today: {{ ai.cache_hits_today }}</p>
-    <p>Estimated cost today: ${{ ai.estimated_cost_today|floatformat:4 }}</p>
-    <p>Last single-reviewer decision: {% if ai.last_decision %}{{ ai.last_decision.decision }} ({{ ai.last_decision.confidence|floatformat:2 }}) — {{ ai.last_decision.reason }}{% else %}—{% endif %}</p>
-    <p>Last TradingAgents recommendation: {% if ai.last_pipeline_run %}{{ ai.last_pipeline_run.final_recommendation }} — <a href="{% url 'agent-pipeline-detail' ai.last_pipeline_run.id %}">view trace</a>{% else %}—{% endif %}</p>
-    <p><a href="{% url 'agent-pipeline-list' %}">All TradingAgents runs →</a></p>
-    <p style="color:#6b7280;">Only runs for Quant + AI (single reviewer) or Full Agent (TradingAgents) mode candidates that already cleared the XGBoost threshold — never on every candle. Falls back to quant-only once the daily call limit is hit. Both AI paths share one daily budget.</p>
+<div class="card" id="ai-reviewer-panel">
+    {% include "dashboard/_ai_reviewer.html" %}
 </div>
 
 <div class="card">

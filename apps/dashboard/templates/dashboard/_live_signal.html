@@ -1,0 +1,38 @@
+<h3>Current signal</h3>
+{% if live_engine.last_signal %}
+<p style="margin-bottom:0.25rem;">
+    <span class="signal-badge signal-{{ live_engine.last_signal.decision|lower }}">{{ live_engine.last_signal.decision }}</span>
+    <span style="color:#6b7280;"> @ {{ live_engine.last_signal.timestamp|date:"Y-m-d H:i" }} (WIB)</span>
+</p>
+{% if live_engine.last_signal.decision != "WAIT" %}
+<p>SL: {{ live_engine.last_signal.stop_loss|floatformat:2 }} · TP: {{ live_engine.last_signal.take_profit|floatformat:2 }}</p>
+{% endif %}
+<p style="color:#374151;">Why: {{ live_engine.last_signal_reason }}</p>
+{% else %}
+<p>No signal evaluated yet.</p>
+{% endif %}
+
+<h3>Status</h3>
+<p>Last evaluation: {{ live_engine.last_evaluation_at|date:"Y-m-d H:i"|default:"—" }} (WIB)</p>
+<p>Next expected candle: {{ live_engine.next_expected_candle|date:"Y-m-d H:i"|default:"— (engine off)" }} (WIB)</p>
+<p>Model probability: {{ live_engine.last_signal.model_probability|floatformat:3|default:"—" }}</p>
+<p>Inferences today: {{ live_engine.daily_inference_count }}</p>
+
+{% if live_engine.recent_signals %}
+<h3>Signal history</h3>
+<div class="table-wrap">
+<table>
+    <thead><tr><th>Time (WIB)</th><th>Signal</th><th>P(win)</th><th>Reason</th></tr></thead>
+    <tbody>
+        {% for row in live_engine.recent_signals %}
+        <tr>
+            <td>{{ row.signal.timestamp|date:"Y-m-d H:i" }}</td>
+            <td><span class="signal-badge signal-{{ row.signal.decision|lower }}">{{ row.signal.decision }}</span></td>
+            <td>{{ row.signal.model_probability|floatformat:2|default:"—" }}</td>
+            <td style="white-space:normal;">{{ row.reason }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}

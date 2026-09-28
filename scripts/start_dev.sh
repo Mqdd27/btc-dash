@@ -40,6 +40,17 @@ if ! pg_isready -q 2>/dev/null; then
 fi
 echo "Postgres: OK"
 
+# --- WARP: required for the live engine's Binance/ccxt calls to reach the
+# network at all -- without it the celery worker dies on the first candle
+# check instead of just failing that one task (see NetworkError in its log).
+if command -v warp-cli >/dev/null 2>&1; then
+    if ! warp-cli status 2>/dev/null | grep -q "Connected"; then
+        echo "Cloudflare WARP is disconnected -- connecting..."
+        warp-cli connect >/dev/null 2>&1 || echo "Couldn't connect WARP automatically; run 'warp-cli connect' yourself."
+    fi
+    echo "WARP: $(warp-cli status 2>/dev/null | head -1)"
+fi
+
 # --- Redis: start it if nothing is already listening on 6379. ---
 if redis-cli ping >/dev/null 2>&1; then
     echo "Redis: already running"
